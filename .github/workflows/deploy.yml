@@ -44,6 +44,20 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/spa-backend-despacho:latest
 
       # ----------------------------------------------------------
+      # 3.5. TEST DE CONEXION SSH DIRECTA AL FRONT (DEBUG)
+      # ----------------------------------------------------------
+      - name: Probar conexion SSH directa al Front
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_FRONT_IP }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          debug: true
+          script: |
+            echo "Conexion al FRONT exitosa!"
+            hostname -I
+
+      # ----------------------------------------------------------
       # 4. Desplegar Base de Datos (En instancia privada DATA)
       #    Usa el Frontend como Proxy (Bastion Host)
       # ----------------------------------------------------------
