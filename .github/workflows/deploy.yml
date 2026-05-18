@@ -53,6 +53,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           debug: true
+          retries: 5
           script: |
             echo "Conexion al FRONT exitosa!"
             hostname -I
@@ -71,6 +72,7 @@ jobs:
           proxy_username: ec2-user
           proxy_key:      ${{ secrets.EC2_SSH_KEY }}
           debug:          true
+          retries:        5
           script: |
             docker stop spa-mysql || true
             docker rm spa-mysql || true
@@ -96,6 +98,7 @@ jobs:
           proxy_host:     ${{ secrets.EC2_FRONT_IP }} # IP Pública
           proxy_username: ec2-user
           proxy_key:      ${{ secrets.EC2_SSH_KEY }}
+          retries:        5
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/spa-backend-ventas:latest
             docker pull ${{ secrets.DOCKER_USERNAME }}/spa-backend-despacho:latest
@@ -134,6 +137,7 @@ jobs:
           host:     ${{ secrets.EC2_FRONT_IP }} # IP Pública
           username: ec2-user
           key:      ${{ secrets.EC2_SSH_KEY }}
+          retries:  5
           script: |
             sudo systemctl stop nginx || true
             sudo systemctl disable nginx || true
