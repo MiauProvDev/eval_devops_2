@@ -19,10 +19,7 @@ resource "aws_instance" "front" {
               yum update -y --security
               yum update -y
 
-              # --- Servidor web (Nginx) ---
-              amazon-linux-extras install nginx1 -y
-              systemctl start nginx
-              systemctl enable nginx
+
 
               # --- Docker ---
               amazon-linux-extras install docker -y
@@ -38,8 +35,6 @@ resource "aws_instance" "front" {
               docker --version        >> /var/log/instalaciones.log
               echo "=== VERSION GIT ===" >> /var/log/instalaciones.log
               git --version           >> /var/log/instalaciones.log
-              echo "=== ESTADO NGINX ===" >> /var/log/instalaciones.log
-              systemctl status nginx  >> /var/log/instalaciones.log
               EOF
 
   tags = {
@@ -100,7 +95,7 @@ resource "aws_instance" "back" {
 
 # ============================================================
 # INSTANCIA DATA (privada)
-# - Docker instalado
+# - MySQL instalado (solo instalado, no configurado aún)
 # - Git instalado
 # - Actualizaciones de seguridad aplicadas
 # ============================================================
@@ -164,10 +159,10 @@ resource "aws_launch_template" "lt_front" {
     #!/bin/bash
     yum update -y --security
     yum update -y
-    amazon-linux-extras install nginx1 docker -y
+    amazon-linux-extras install docker -y
     yum install git -y
-    systemctl start nginx docker
-    systemctl enable nginx docker
+    systemctl start docker
+    systemctl enable docker
     usermod -aG docker ec2-user
   EOF
   )

@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
 
@@ -120,6 +120,8 @@ jobs:
           username: ec2-user
           key:      ${{ secrets.EC2_SSH_KEY }}
           script: |
+            sudo systemctl stop nginx || true
+            sudo systemctl disable nginx || true
             docker pull ${{ secrets.DOCKER_USERNAME }}/spa-frontend:latest
             docker stop spa-frontend || true
             docker rm spa-frontend || true
