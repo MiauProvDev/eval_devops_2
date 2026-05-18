@@ -100,7 +100,7 @@ resource "aws_instance" "back" {
 
 # ============================================================
 # INSTANCIA DATA (privada)
-# - MySQL instalado (solo instalado, no configurado aún)
+# - Docker instalado
 # - Git instalado
 # - Actualizaciones de seguridad aplicadas
 # ============================================================
@@ -118,18 +118,18 @@ resource "aws_instance" "data" {
               yum update -y --security
               yum update -y
 
-              # --- MySQL (motor de base de datos) ---
-              # Se instala el servidor MySQL y se inicia el servicio
-              yum install mysql-server -y
-              systemctl enable mysqld
-              systemctl start mysqld
+              # --- Docker ---
+              amazon-linux-extras install docker -y
+              systemctl start docker
+              systemctl enable docker
+              usermod -aG docker ec2-user
 
               # --- Git ---
               yum install git -y
 
               # --- Verificacion ---
-              echo "=== VERSION MYSQL ===" >> /var/log/instalaciones.log
-              mysql --version         >> /var/log/instalaciones.log
+              echo "=== VERSION DOCKER ===" >> /var/log/instalaciones.log
+              docker --version        >> /var/log/instalaciones.log
               echo "=== VERSION GIT ===" >> /var/log/instalaciones.log
               git --version           >> /var/log/instalaciones.log
               EOF
@@ -230,9 +230,11 @@ resource "aws_launch_template" "lt_data" {
     #!/bin/bash
     yum update -y --security
     yum update -y
-    yum install mysql-server git -y
-    systemctl enable mysqld
-    systemctl start mysqld
+    amazon-linux-extras install docker -y
+    yum install git -y
+    systemctl start docker
+    systemctl enable docker
+    usermod -aG docker ec2-user
   EOF
   )
 
