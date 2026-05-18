@@ -1,0 +1,103 @@
+name: CI/CD Deploy a AWS
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Login en Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
+            -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build y Push frontend
+        run: |
+          docker build --platform linux/amd64 \
+            -t ${{ secrets.DOCKER_USERNAME }}/spa-frontend:latest \
+            ./front_despacho
+          docker push ${{ secrets.DOCKER_USERNAME }}/spa-frontend:latest
+
+      - name: Build y Push backend ventas
+        run: |
+          docker build --platform linux/amd64 \
+            -t ${{ secrets.DOCKER_USERNAME }}/spa-backend-ventas:latest \
+            ./back-Ventas_SpringBoot/Springboot-API-REST
+          docker push ${{ secrets.DOCKER_USERNAME }}/spa-backend-ventas:latest
+
+      - name: Build y Push backend despachos
+        run: |
+          docker build --platform linux/amd64 \
+            -t ${{ secrets.DOCKER_USERNAME }}/spa-backend-despacho:latest \
+            ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+          docker push ${{ secrets.DOCKER_USERNAME }}/spa-backend-despacho:latest
+
+      - name: Desplegar en EC2 frontend
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.EC2_FRONT_IP }}
+          username: ec2-user
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/spa-frontend:latest
+            docker stop  spa-frontend || true
+            docker rm    spa-frontend || true
+            docker network create spa-net || true
+            docker run -d \
+              --name spa-frontend \
+              --network spa-net \
+              -p 80:80 \
+              ${{ secrets.DOCKER_USERNAME }}/spa-frontend:latest
+
+      - name: Desplegar backends y MySQL en EC2 back
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.EC2_BACK_IP }}
+          username: ec2-user
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/spa-backend-ventas:latest
+            docker pull ${{ secrets.DOCKER_USERNAME }}/spa-backend-despacho:latest
+
+            docker stop  spa-backend-ventas spa-backend-despacho spa-mysql || true
+            docker rm    spa-backend-ventas spa-backend-despacho spa-mysql || true
+            docker network create spa-net || true
+
+            docker run -d \
+              --name spa-mysql \
+              --network spa-net \
+              -e MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }} \
+              -e MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }} \
+              -v mysql_data:/var/lib/mysql \
+              mysql:8
+
+            sleep 30
+
+            docker run -d \
+              --name spa-backend-ventas \
+              --network spa-net \
+              -p 8080:8080 \
+              -e DB_ENDPOINT=spa-mysql \
+              -e DB_PORT=3306 \
+              -e DB_NAME=${{ secrets.MYSQL_DATABASE }} \
+              -e DB_USERNAME=root \
+              -e DB_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }} \
+              ${{ secrets.DOCKER_USERNAME }}/spa-backend-ventas:latest
+
+            docker run -d \
+              --name spa-backend-despacho \
+              --network spa-net \
+              -p 8081:8081 \
+              -e DB_ENDPOINT=spa-mysql \
+              -e DB_PORT=3306 \
+              -e DB_NAME=${{ secrets.MYSQL_DATABASE }} \
+              -e DB_USERNAME=root \
+              -e DB_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }} \
+              ${{ secrets.DOCKER_USERNAME }}/spa-backend-despacho:latest
