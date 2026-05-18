@@ -46,6 +46,21 @@ jobs:
       # ----------------------------------------------------------
       # 3.5. TEST DE CONEXION SSH DIRECTA AL FRONT (DEBUG)
       # ----------------------------------------------------------
+      - name: Esperar a que SSH del FRONT esté disponible
+        run: |
+          set -e
+          host=${{ secrets.EC2_FRONT_IP }}
+          for i in {1..20}; do
+            if timeout 3 bash -c "</dev/tcp/$host/22" >/dev/null 2>&1; then
+              echo "SSH disponible en $host"
+              exit 0
+            fi
+            echo "Esperando SSH en $host (intento $i/20)..."
+            sleep 15
+          done
+          echo "ERROR: SSH no está disponible en $host" >&2
+          exit 1
+
       - name: Probar conexion SSH directa al Front
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -53,7 +68,6 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           debug: true
-          retries: 5
           script: |
             echo "Conexion al FRONT exitosa!"
             hostname -I
@@ -72,7 +86,6 @@ jobs:
           proxy_username: ec2-user
           proxy_key:      ${{ secrets.EC2_SSH_KEY }}
           debug:          true
-          retries:        5
           script: |
             docker stop spa-mysql || true
             docker rm spa-mysql || true
@@ -98,7 +111,6 @@ jobs:
           proxy_host:     ${{ secrets.EC2_FRONT_IP }} # IP Pública
           proxy_username: ec2-user
           proxy_key:      ${{ secrets.EC2_SSH_KEY }}
-          retries:        5
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/spa-backend-ventas:latest
             docker pull ${{ secrets.DOCKER_USERNAME }}/spa-backend-despacho:latest
@@ -137,7 +149,6 @@ jobs:
           host:     ${{ secrets.EC2_FRONT_IP }} # IP Pública
           username: ec2-user
           key:      ${{ secrets.EC2_SSH_KEY }}
-          retries:  5
           script: |
             sudo systemctl stop nginx || true
             sudo systemctl disable nginx || true
