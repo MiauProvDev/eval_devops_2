@@ -91,11 +91,11 @@ resource "aws_security_group" "sg_data" {
   }
 
   ingress {
-    description     = "SSH desde Back (para administracion)"
+    description     = "SSH desde Front (Bastion para administracion y despliegue)"
     from_port       = 22
     to_port         = 22
     protocol        = "tcp"
-    security_groups = [aws_security_group.sg_back.id]
+    security_groups = [aws_security_group.sg_front.id]
   }
 
   egress {
