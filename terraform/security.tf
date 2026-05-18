@@ -48,9 +48,17 @@ resource "aws_security_group" "sg_back" {
   vpc_id      = aws_vpc.main_vpc.id
 
   ingress {
-    description     = "Microservicio desde Front"
+    description     = "Microservicio Ventas desde Front"
     from_port       = 8080
     to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.sg_front.id]
+  }
+
+  ingress {
+    description     = "Microservicio Despachos desde Front"
+    from_port       = 8081
+    to_port         = 8081
     protocol        = "tcp"
     security_groups = [aws_security_group.sg_front.id]
   }
