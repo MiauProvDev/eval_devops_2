@@ -46,6 +46,25 @@ jobs:
       # ----------------------------------------------------------
       # 3.5. TEST DE CONEXION SSH DIRECTA AL FRONT (DEBUG)
       # ----------------------------------------------------------
+      - name: Debug runner connectivity to FRONT
+        run: |
+          echo "Runner public IP: $(curl -s ifconfig.me)"
+          echo "Testing SSH from runner to FRONT"
+          python3 - <<'PY'
+import os, socket
+host = os.environ['FRONT_IP']
+print('target host:', host)
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    sock.settimeout(5)
+    try:
+        sock.connect((host, 22))
+        print('SSH port reachable')
+    except Exception as e:
+        print('SSH port not reachable:', e)
+PY
+        env:
+          FRONT_IP: ${{ secrets.EC2_FRONT_IP }}
+
       - name: Esperar a que SSH del FRONT esté disponible
         run: |
           set -e
